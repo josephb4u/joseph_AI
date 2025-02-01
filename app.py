@@ -161,7 +161,7 @@ if st.button("Reset"):
     st.session_state["text_chunks"] = []
     st.session_state["vector_store"] = None
     st.session_state["chain"] = None
-    st.experimental_rerun()
+    st.rerun()
 
 if st.session_state.get("pdf_docs"):
     st.subheader("Uploaded Files:")
