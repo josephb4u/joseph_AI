@@ -19,26 +19,37 @@ FAISS_PATH = "faiss_index"
 # Configure Google Generative AI
 api_key = "AIzaSyA50omOP2Pz2LLCRFmZHt21mQH5JKI7uOg"  # Ensure API Key is set in Streamlit Secrets
 if not api_key:
-    st.error("Google API key is missing! Please set it in Streamlit secrets.")
+    st.error("⚠️ Google API key is missing! Please set it in Streamlit secrets.")
 else:
     genai.configure(api_key=api_key)
 
 # Function to extract text from PDFs
 def get_pdf_text(pdf_docs):
+    """ Extracts text from uploaded PDF files """
     text = ""
     for pdf in pdf_docs:
         pdf_reader = PdfReader(pdf)
         for page in pdf_reader.pages:
-            text += page.extract_text() or ""  # Avoid NoneType errors
+            extracted_text = page.extract_text()
+            if extracted_text:
+                text += extracted_text + "\n"
+            else:
+                st.warning(f"⚠️ Some pages in {pdf.name} may not be extractable.")
     return text
 
 # Function to split text into chunks
 def get_text_chunks(text):
-    text_splitter = RecursiveCharacterTextSplitter(chunk_size=10000, chunk_overlap=1000)
-    return text_splitter.split_text(text)
+    """ Splits extracted text into smaller chunks for processing """
+    st.write("📌 Splitting text into chunks for FAISS indexing...")
+    text_splitter = RecursiveCharacterTextSplitter(chunk_size=5000, chunk_overlap=500)
+    chunks = text_splitter.split_text(text)
+    st.write(f"✅ Text split into {len(chunks)} chunks.")
+    return chunks
 
 # Function to create FAISS vector store
 def get_vector_store(text_chunks):
+    """ Creates a FAISS vector store from text chunks """
+    st.write("📌 Creating FAISS Vector Store...")
     embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001")
     vector_store = FAISS.from_texts(text_chunks, embedding=embeddings)
 
@@ -48,10 +59,11 @@ def get_vector_store(text_chunks):
 
     vector_store.save_local(FAISS_PATH)
     st.session_state["vector_store"] = FAISS_PATH  # Store FAISS path in session
-    st.write("✅ FAISS Vector Store saved successfully!")  # Debugging output
+    st.write("✅ FAISS Vector Store saved successfully!")
 
 # Function to create a conversational chain
 def get_conversational_chain():
+    """ Creates a LangChain conversational model for Q&A """
     prompt_template = """
     Answer the questions as detailed as possible from the provided context.
     If the answer is not in the provided context, say: "Answer is not available in the given file."
@@ -66,23 +78,26 @@ def get_conversational_chain():
 
 # Function to process user input
 def user_input(user_question):
+    """ Handles user queries and retrieves answers using FAISS """
     if "vector_store" not in st.session_state:
-        st.error("Vector store not found! Please upload and process PDFs first.")
+        st.error("⚠️ Vector store not found! Please upload and process PDFs first.")
         return
 
     # Check if FAISS index exists
     if not os.path.exists(st.session_state["vector_store"]):
-        st.error("FAISS index missing or not saved properly. Please re-upload PDFs.")
+        st.error("⚠️ FAISS index missing or not saved properly. Please re-upload PDFs.")
         return
 
     try:
-        # Load FAISS vector store with safe deserialization
+        st.write("📌 Loading FAISS Vector Store...")
         embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001")
         new_db = FAISS.load_local(
             st.session_state["vector_store"], 
             embeddings, 
             allow_dangerous_deserialization=True  # Fix FAISS deserialization error
         )
+        st.write("✅ FAISS Vector Store loaded successfully!")
+
         docs = new_db.similarity_search(user_question)
 
         chain = get_conversational_chain()
@@ -111,12 +126,18 @@ def main():
                 return
 
             with st.spinner("🔄 Processing PDFs..."):
+                st.write("📌 Extracting text from PDFs...")
                 raw_text = get_pdf_text(pdf_docs)
+
+                st.write("📌 Splitting text into chunks...")
                 text_chunks = get_text_chunks(raw_text)
+
+                st.write("📌 Creating FAISS Vector Store...")
                 get_vector_store(text_chunks)
 
                 st.session_state["pdf_docs"] = pdf_docs
                 st.success("✅ PDFs processed successfully!")
+                st.write("🚀 Processing complete! You can now ask questions.")
 
     if "pdf_docs" in st.session_state:
         st.subheader("📄 Uploaded Files:")
