@@ -74,9 +74,13 @@ def user_input(user_question):
         return
 
     try:
-        # Load FAISS vector store
+        # Load FAISS vector store with safe deserialization
         embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001")
-        new_db = FAISS.load_local(st.session_state["vector_store"], embeddings)
+        new_db = FAISS.load_local(
+            st.session_state["vector_store"], 
+            embeddings, 
+            allow_dangerous_deserialization=True  # Fix FAISS deserialization error
+        )
         docs = new_db.similarity_search(user_question)
         
         chain = get_conversational_chain()
