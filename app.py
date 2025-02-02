@@ -128,13 +128,13 @@ def main():
             with st.spinner("🔄 Processing PDFs..."):
                 st.write("📌 Extracting text from PDFs...")
                 raw_text = get_pdf_text(pdf_docs)
-
+                st.write("🚀 Texts extracted from PDFs")
                 st.write("📌 Splitting text into chunks...")
                 text_chunks = get_text_chunks(raw_text)
-
+                st.write("🚀 Splitted text into chunks")
                 st.write("📌 Creating FAISS Vector Store...")
                 get_vector_store(text_chunks)
-
+                st.write("🚀 FAISS created")
                 st.session_state["pdf_docs"] = pdf_docs
                 st.success("✅ PDFs processed successfully!")
                 st.write("🚀 Processing complete! You can now ask questions.")
