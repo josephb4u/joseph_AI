@@ -13,7 +13,7 @@ from langchain import PromptTemplate
 st.set_page_config(page_title="Chat With Multiple PDFs", layout="wide")
 
 # Configure Google Generative AI
-api_key = os.getenv("GOOGLE_API_KEY")
+api_key = os.getenv("AIzaSyA50omOP2Pz2LLCRFmZHt21mQH5JKI7uOg")
 if api_key:
     genai.configure(api_key=api_key)
 else:
