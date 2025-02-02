@@ -13,7 +13,7 @@ from langchain import PromptTemplate
 st.set_page_config(page_title="Chat With Multiple PDFs", layout="wide")
 
 # Configure Google Generative AI
-api_key = os.getenv("GOOGLE_API_KEY")
+api_key = os.getenv(GOOGLE_API_KEY)
 if not api_key:
     print("Error: API Key not set!")
     st.error("Google API key is missing! Please set the environment variable,please check")
