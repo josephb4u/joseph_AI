@@ -172,9 +172,34 @@ if st.session_state.get("pdf_docs"):
 
 
 def main():
-    st.title("Chat With Multiple PDFs")
-    st.write("Welcome to the app!")
-    st.sidebar.write("Upload your PDFs below:")
+    st.set_page_config(page_title="Chat With Multiple PDFs", layout="wide")
+    st.header("Chat with Multiple PDFs powered by Gemini 🚀")
+    
+    user_question = st.text_input("Ask a Question from the PDF Files")
+
+    if user_question:
+        if "pdf_docs" in st.session_state and st.session_state["pdf_docs"]:
+            processed_pdf_text = get_pdf_text(st.session_state["pdf_docs"])
+            user_input(user_question, processed_pdf_text)
+        else:
+            st.error("Please upload PDF files first.")
+
+    with st.sidebar:
+        st.title("Menu:")
+        pdf_docs = st.file_uploader("Upload PDF Files", type="pdf", accept_multiple_files=True)
+        if pdf_docs:
+            st.session_state["pdf_docs"] = pdf_docs
+        
+        if st.button("Submit & Process"):
+            with st.spinner("Processing PDFs..."):
+                raw_text = get_pdf_text(pdf_docs)
+                text_chunks = get_text_chunks(raw_text)
+                vector_store = get_vector_store(text_chunks)
+                
+                st.session_state["text_chunks"] = text_chunks
+                st.session_state["vector_store"] = vector_store
+                
+                st.success("PDFs processed successfully!")
 
 if __name__ == "__main__":
     main()
