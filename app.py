@@ -17,7 +17,7 @@ api_key = os.getenv("AIzaSyA50omOP2Pz2LLCRFmZHt21mQH5JKI7uOg")
 if api_key:
     genai.configure(api_key=api_key)
 else:
-    st.error("Google API key is missing! Please set the environment variable.")
+    st.error("Google API key is missing! Please set the environment variable,please check")
 
 # Function to extract text from PDFs
 def get_pdf_text(pdf_docs):
