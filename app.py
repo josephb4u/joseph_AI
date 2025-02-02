@@ -12,6 +12,7 @@ from langchain.chains.question_answering import load_qa_chain
 from langchain import PromptTemplate
 st.set_page_config(page_title="Chat With Multiple PDF", layout="wide")
 
+
 os.getenv("GOOGLE_API_KEY")
 genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
 
@@ -136,7 +137,8 @@ def main():
     with st.sidebar:
         st.title("Menu:")
         # Removed redundant st.file_uploader
-        pdf_docs = st.file_uploader("Upload Files & Click Submit to Proceed", type="pdf", accept_multiple_files=True)
+        # pdf_docs = st.file_uploader("Upload Files & Click Submit to Proceed", type="pdf", accept_multiple_files=True)
+        pdf_docs = st.sidebar.file_uploader("Upload PDF Files", type="pdf", accept_multiple_files=True)
         if st.button("Submit & Process"):
             with st.spinner("Processing..."):  # Removed redundant with st.spinner
                 raw_text = ""
@@ -172,6 +174,7 @@ if st.session_state.get("pdf_docs"):
 def main():
     st.title("Chat With Multiple PDFs")
     st.write("Welcome to the app!")
+    st.sidebar.write("Upload your PDFs below:")
 
 if __name__ == "__main__":
     main()
