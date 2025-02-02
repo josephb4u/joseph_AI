@@ -14,11 +14,12 @@ st.set_page_config(page_title="Chat With Multiple PDFs", layout="wide")
 
 # Configure Google Generative AI
 api_key = os.getenv("AIzaSyA50omOP2Pz2LLCRFmZHt21mQH5JKI7uOg")
-if api_key:
-    genai.configure(api_key=api_key)
-else:
+if not api_key:
+    print("Error: API Key not set!")
     st.error("Google API key is missing! Please set the environment variable,please check")
-
+else:
+    genai.configure(api_key=api_key)
+    print("API Key configured successfully!")
 # Function to extract text from PDFs
 def get_pdf_text(pdf_docs):
     text = ""
