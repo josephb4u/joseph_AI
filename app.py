@@ -12,14 +12,17 @@ from langchain import PromptTemplate
 # Set up Streamlit page
 st.set_page_config(page_title="Chat With Multiple PDFs", layout="wide")
 
+# Define FAISS storage path
+FAISS_PATH = "faiss_index"
+
 # Configure Google Generative AI
-api_key = "AIzaSyA50omOP2Pz2LLCRFmZHt21mQH5JKI7uOg"
+api_key = os.getenv("GOOGLE_API_KEY")  # Ensure API Key is set in Streamlit Secrets
 if not api_key:
-    print("Error: API Key not set!")
-    st.error("Google API key is missing! Please set the environment variable,please check")
+    st.error("Google API key is missing! Please set it in Streamlit secrets.")
 else:
     genai.configure(api_key=api_key)
-    print("API Key configured successfully!")
+
+
 # Function to extract text from PDFs
 def get_pdf_text(pdf_docs):
     text = ""
@@ -29,25 +32,26 @@ def get_pdf_text(pdf_docs):
             text += page.extract_text() or ""  # Avoid NoneType errors
     return text
 
+
 # Function to split text into chunks
 def get_text_chunks(text):
     text_splitter = RecursiveCharacterTextSplitter(chunk_size=10000, chunk_overlap=1000)
     return text_splitter.split_text(text)
 
+
 # Function to create FAISS vector store
 def get_vector_store(text_chunks):
     embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001")
     vector_store = FAISS.from_texts(text_chunks, embedding=embeddings)
+
     # Ensure directory exists before saving
-    if not os.path.exists("faiss_index"):
-        os.makedirs("faiss_index", exist_ok=True)
-    vector_store.save_local("faiss_index")
-    # Check if FAISS index exists before loading
-    if os.path.exists("faiss_index"):
-        st.session_state["vector_store"] = FAISS.load_local("faiss_index", GoogleGenerativeAIEmbeddings(model="models/embedding-001"))
-    else:
-        st.error("FAISS index not found! Please re-upload and process PDFs first.")
-    return vector_store
+    if not os.path.exists(FAISS_PATH):
+        os.makedirs(FAISS_PATH, exist_ok=True)
+
+    vector_store.save_local(FAISS_PATH)
+    st.session_state["vector_store"] = FAISS_PATH  # Store the FAISS path in session
+
+
 # Function to create a conversational chain
 def get_conversational_chain():
     prompt_template = """
@@ -62,31 +66,32 @@ def get_conversational_chain():
     prompt = PromptTemplate(template=prompt_template, input_variables=["context", "question"])
     return load_qa_chain(model, chain_type="stuff", prompt=prompt)
 
+
 # Function to process user input
 def user_input(user_question):
-    if "vector_store" not in st.session_state or st.session_state["vector_store"] is None:
+    if "vector_store" not in st.session_state or not os.path.exists(st.session_state["vector_store"]):
         st.error("Please upload and process PDFs first!")
         return
-    # Load FAISS vector store
-    embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001")
+
     try:
-        new_db = FAISS.load_local("faiss_index", embeddings)
-    except:
-        st.error("FAISS index not found. Please re-upload and process the PDFs.")
+        # Load FAISS vector store
+        embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001")
+        new_db = FAISS.load_local(st.session_state["vector_store"], embeddings)
+        docs = new_db.similarity_search(user_question)
+        
+        chain = get_conversational_chain()
+        response = chain({"input_documents": docs, "question": user_question}, return_only_outputs=True)
+        
+        st.write("Reply: ", response.get("output_text", "No response generated."))
+    except Exception as e:
+        st.error(f"Error processing query: {e}")
         return
 
-    embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001")
-    new_db = FAISS.load_local("faiss_index", embeddings)
-    docs = new_db.similarity_search(user_question)
-    chain = get_conversational_chain()
-
-    response = chain({"input_documents": docs, "question": user_question}, return_only_outputs=True)
-    st.write("Reply: ", response.get("output_text", "No response generated."))
 
 # Main function for Streamlit UI
 def main():
     st.header("Chat with Multiple PDFs powered by Gemini 🚀")
-    
+
     user_question = st.text_input("Ask a Question from the PDF Files")
     if user_question:
         user_input(user_question)
@@ -94,7 +99,7 @@ def main():
     with st.sidebar:
         st.title("Menu")
         pdf_docs = st.file_uploader("Upload PDF Files", type="pdf", accept_multiple_files=True)
-        
+
         if st.button("Submit & Process"):
             if not pdf_docs:
                 st.error("Please upload at least one PDF.")
@@ -103,10 +108,9 @@ def main():
             with st.spinner("Processing PDFs..."):
                 raw_text = get_pdf_text(pdf_docs)
                 text_chunks = get_text_chunks(raw_text)
-                vector_store = get_vector_store(text_chunks)
-                
+                get_vector_store(text_chunks)
+
                 st.session_state["pdf_docs"] = pdf_docs
-                st.session_state["vector_store"] = FAISS.load_local("faiss_index", GoogleGenerativeAIEmbeddings(model="models/embedding-001"))
                 st.success("PDFs processed successfully!")
 
     if "pdf_docs" in st.session_state:
@@ -115,8 +119,12 @@ def main():
             st.write(f"{i + 1}. {pdf_doc.name}")
 
     if st.button("Reset"):
+        if os.path.exists(FAISS_PATH):
+            import shutil
+            shutil.rmtree(FAISS_PATH)  # Delete FAISS index
         st.session_state.clear()
         st.rerun()
+
 
 if __name__ == "__main__":
     main()
