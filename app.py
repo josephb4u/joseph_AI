@@ -17,7 +17,7 @@ st.set_page_config(page_title="Chat With Multiple PDFs", layout="wide")
 FAISS_PATH = "faiss_index"
 
 # Configure Google Generative AI
-api_key = os.getenv("GOOGLE_API_KEY")  # Ensure API Key is set in Streamlit Secrets
+api_key = "AIzaSyA50omOP2Pz2LLCRFmZHt21mQH5JKI7uOg"  # Ensure API Key is set in Streamlit Secrets
 if not api_key:
     st.error("Google API key is missing! Please set it in Streamlit secrets.")
 else:
