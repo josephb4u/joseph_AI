@@ -17,7 +17,7 @@ st.set_page_config(page_title="Chat With Multiple PDFs", layout="wide")
 FAISS_PATH = "faiss_index"
 
 # Configure Google Generative AI
-api_key = "AIzaSyA50omOP2Pz2LLCRFmZHt21mQH5JKI7uOg"  # Ensure API Key is set in Streamlit Secrets
+api_key = os.getenv("GOOGLE_API_KEY")  # Ensure API Key is set in Streamlit Secrets
 if not api_key:
     st.error("⚠️ Google API key is missing! Please set it in Streamlit secrets.")
 else:
@@ -128,13 +128,13 @@ def main():
             with st.spinner("🔄 Processing PDFs..."):
                 st.write("📌 Extracting text from PDFs...")
                 raw_text = get_pdf_text(pdf_docs)
-                st.write("🚀 Texts extracted from PDFs")
+
                 st.write("📌 Splitting text into chunks...")
                 text_chunks = get_text_chunks(raw_text)
-                st.write("🚀 Splitted text into chunks")
+
                 st.write("📌 Creating FAISS Vector Store...")
                 get_vector_store(text_chunks)
-                st.write("🚀 FAISS created")
+
                 st.session_state["pdf_docs"] = pdf_docs
                 st.success("✅ PDFs processed successfully!")
                 st.write("🚀 Processing complete! You can now ask questions.")
