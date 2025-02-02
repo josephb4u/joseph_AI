@@ -39,8 +39,10 @@ def get_vector_store(text_chunks):
     embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001")
     vector_store = FAISS.from_texts(text_chunks, embedding=embeddings)
     # Ensure directory exists before saving
-    os.makedirs("faiss_index", exist_ok=True)
-    vector_store.save_local("faiss_index")  
+    if not os.path.exists("faiss_index"):
+        os.makedirs("faiss_index", exist_ok=True)
+    vector_store.save_local("faiss_index")
+    st.session_state["vector_store"] = vector_store  # Ensure FAISS store is saved
     return vector_store
 # Function to create a conversational chain
 def get_conversational_chain():
@@ -58,8 +60,15 @@ def get_conversational_chain():
 
 # Function to process user input
 def user_input(user_question):
-    if "vector_store" not in st.session_state:
+    if "vector_store" not in st.session_state or st.session_state["vector_store"] is None:
         st.error("Please upload and process PDFs first!")
+        return
+    # Load FAISS vector store
+    embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001")
+    try:
+        new_db = FAISS.load_local("faiss_index", embeddings)
+    except:
+        st.error("FAISS index not found. Please re-upload and process the PDFs.")
         return
 
     embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001")
@@ -93,7 +102,7 @@ def main():
                 vector_store = get_vector_store(text_chunks)
                 
                 st.session_state["pdf_docs"] = pdf_docs
-                st.session_state["vector_store"] = vector_store
+                st.session_state["vector_store"] = FAISS.load_local("faiss_index", GoogleGenerativeAIEmbeddings(model="models/embedding-001"))
                 st.success("PDFs processed successfully!")
 
     if "pdf_docs" in st.session_state:
