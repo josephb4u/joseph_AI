@@ -112,7 +112,9 @@ def main():
 
             with st.spinner("🔄 Processing PDFs..."):
                 raw_text = get_pdf_text(pdf_docs)
+                print("1)
                 text_chunks = get_text_chunks(raw_text)
+                print("2")
                 get_vector_store(text_chunks)
 
                 st.session_state["pdf_docs"] = pdf_docs
