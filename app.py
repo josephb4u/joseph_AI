@@ -78,4 +78,30 @@ def main():
 
     with st.sidebar:
         st.title("Menu")
-        pdf_docs = st.file_uploader("Upload PDF Files", type="
+        pdf_docs = st.file_uploader("Upload PDF Files", type="pdf", accept_multiple_files=True)
+        
+        if st.button("Submit & Process"):
+            if not pdf_docs:
+                st.error("Please upload at least one PDF.")
+                return
+
+            with st.spinner("Processing PDFs..."):
+                raw_text = get_pdf_text(pdf_docs)
+                text_chunks = get_text_chunks(raw_text)
+                vector_store = get_vector_store(text_chunks)
+                
+                st.session_state["pdf_docs"] = pdf_docs
+                st.session_state["vector_store"] = vector_store
+                st.success("PDFs processed successfully!")
+
+    if "pdf_docs" in st.session_state:
+        st.subheader("Uploaded Files:")
+        for i, pdf_doc in enumerate(st.session_state["pdf_docs"]):
+            st.write(f"{i + 1}. {pdf_doc.name}")
+
+    if st.button("Reset"):
+        st.session_state.clear()
+        st.rerun()
+
+if __name__ == "__main__":
+    main()
